@@ -1,0 +1,147 @@
+{
+  "info": {
+    "name": "Railway Reservation System (FA2 PCCoE OOMSD)",
+    "description": "Postman Collection for Online Railway Reservation System. Group: Pankaj Gill, Ajim Pathan, Tejas Parkar. Faculty: Prof. Shalu Mahajan.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login (Passenger)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tejas@pccoe.edu.in\",\n  \"password\": \"Pass@123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Login (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@irctc.ac.in\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Stations & Search",
+      "item": [
+        {
+          "name": "Get All Stations",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/stations", "host": ["{{baseUrl}}"], "path": ["api", "v1", "stations"] }
+          }
+        },
+        {
+          "name": "Search Trains (PUNE to CSMT)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedules/search?source=PUNE&destination=CSMT",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedules", "search"],
+              "query": [
+                { "key": "source", "value": "PUNE" },
+                { "key": "destination", "value": "CSMT" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Seats & Locking",
+      "item": [
+        {
+          "name": "Get Seats for Coach",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/seats/coaches/cch-001", "host": ["{{baseUrl}}"], "path": ["api", "v1", "seats", "coaches", "cch-001"] }
+          }
+        },
+        {
+          "name": "Acquire Atomic Seat Lock",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seatId\": \"st-002\",\n  \"userId\": \"usr-pass-01\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/seats/lock", "host": ["{{baseUrl}}"], "path": ["api", "v1", "seats", "lock"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Reservations & Booking",
+      "item": [
+        {
+          "name": "Book Ticket (14-Step Flow)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": \"sch-001\",\n  \"trainNumber\": \"12157\",\n  \"journeyDate\": \"2026-10-25\",\n  \"paymentMethod\": \"UPI\",\n  \"paymentDetails\": { \"vpa\": \"tejas@okaxis\" },\n  \"selectedSeats\": [\n    {\n      \"seatId\": \"st-002\",\n      \"seatNumber\": 2,\n      \"coachNumber\": \"C1\",\n      \"berthType\": \"Middle\",\n      \"passengerName\": \"Tejas Parkar\"\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/reservations", "host": ["{{baseUrl}}"], "path": ["api", "v1", "reservations"] }
+          }
+        },
+        {
+          "name": "Check PNR Status",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/reservations/PNR847291", "host": ["{{baseUrl}}"], "path": ["api", "v1", "reservations", "PNR847291"] }
+          }
+        },
+        {
+          "name": "Cancel Ticket & Process Refund",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/reservations/PNR847291/cancel", "host": ["{{baseUrl}}"], "path": ["api", "v1", "reservations", "PNR847291", "cancel"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Cache Diagnostics",
+      "item": [
+        {
+          "name": "Get Cache Hit/Miss Diagnostics",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/trains/diagnostics/cache", "host": ["{{baseUrl}}"], "path": ["api", "v1", "trains", "diagnostics", "cache"] }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ]
+}

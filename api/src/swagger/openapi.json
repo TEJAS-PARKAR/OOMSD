@@ -1,0 +1,150 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Online Railway Reservation System REST API",
+    "version": "1.0.0",
+    "description": "FA2 Design to Deployment - PCCoE OOMSD (BCER27PC02). Course Faculty: Prof. Shalu Mahajan. Implemented by Pankaj Gill, Ajim Pathan, Tejas Parkar."
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "API Gateway / Reverse Proxy v1 Endpoint"
+    }
+  ],
+  "paths": {
+    "/stations": {
+      "get": {
+        "summary": "Retrieve all stations",
+        "description": "Returns full station list. Uses Cache-Aside with Redis (TTL: 600s).",
+        "responses": {
+          "200": { "description": "Station list returned successfully" }
+        }
+      }
+    },
+    "/schedules/search": {
+      "get": {
+        "summary": "Search trains between stations",
+        "parameters": [
+          { "name": "source", "in": "query", "required": true, "schema": { "type": "string" }, "example": "PUNE" },
+          { "name": "destination", "in": "query", "required": true, "schema": { "type": "string" }, "example": "CSMT" },
+          { "name": "date", "in": "query", "required": false, "schema": { "type": "string" }, "example": "2026-10-25" }
+        ],
+        "responses": {
+          "200": { "description": "Available train schedules matching criteria" },
+          "400": { "description": "Missing source or destination query parameters" }
+        }
+      }
+    },
+    "/trains/{trainNumber}/coaches": {
+      "get": {
+        "summary": "Get coaches for a train",
+        "parameters": [
+          { "name": "trainNumber", "in": "path", "required": true, "schema": { "type": "string" }, "example": "12157" }
+        ],
+        "responses": {
+          "200": { "description": "List of coaches attached to the train" }
+        }
+      }
+    },
+    "/seats/coaches/{coachId}": {
+      "get": {
+        "summary": "Check live seat availability in coach",
+        "description": "Direct database query with expired lock cleanup. Live seats are NOT cached.",
+        "parameters": [
+          { "name": "coachId", "in": "path", "required": true, "schema": { "type": "string" }, "example": "cch-001" }
+        ],
+        "responses": {
+          "200": { "description": "Seat layout and status (AVAILABLE, LOCKED, BOOKED)" }
+        }
+      }
+    },
+    "/seats/lock": {
+      "post": {
+        "summary": "Acquire temporary atomic seat lock",
+        "description": "Locks seat for 120 seconds to prevent concurrent booking conflicts.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "seatId": { "type": "string", "example": "st-001" },
+                  "userId": { "type": "string", "example": "usr-pass-01" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Seat locked successfully" },
+          "409": { "description": "Seat conflict: Seat already locked or booked" }
+        }
+      }
+    },
+    "/reservations": {
+      "post": {
+        "summary": "14-Step Booking Flow (Book Ticket)",
+        "description": "Validates schedule, locks seats, invokes PaymentGatewayAdapter, generates PNR, marks seats BOOKED, and dispatches Observer notifications.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scheduleId": { "type": "string", "example": "sch-001" },
+                  "trainNumber": { "type": "string", "example": "12157" },
+                  "journeyDate": { "type": "string", "example": "2026-10-25" },
+                  "paymentMethod": { "type": "string", "example": "UPI" },
+                  "selectedSeats": { "type": "array" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Ticket successfully booked (PNR generated)" },
+          "402": { "description": "Payment failure" },
+          "409": { "description": "Seat conflict during booking" },
+          "422": { "description": "Unprocessable entity / validation error" }
+        }
+      }
+    },
+    "/reservations/{pnr}": {
+      "get": {
+        "summary": "Check PNR Status",
+        "parameters": [
+          { "name": "pnr", "in": "path", "required": true, "schema": { "type": "string" }, "example": "PNR847291" }
+        ],
+        "responses": {
+          "200": { "description": "PNR details, coach/seat assignment, passenger info" },
+          "404": { "description": "PNR not found" }
+        }
+      }
+    },
+    "/reservations/{pnr}/cancel": {
+      "post": {
+        "summary": "Cancel Ticket & Process Refund",
+        "description": "Applies Strategy pattern for refund calculation based on time before departure, calls Payment adapter, and marks seats AVAILABLE.",
+        "parameters": [
+          { "name": "pnr", "in": "path", "required": true, "schema": { "type": "string" }, "example": "PNR847291" }
+        ],
+        "responses": {
+          "200": { "description": "Ticket cancelled and refund processed" },
+          "400": { "description": "Ticket is already cancelled" },
+          "404": { "description": "PNR not found" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Passenger / Admin Login",
+        "responses": {
+          "200": { "description": "JWT Bearer Token and user role profile" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    }
+  }
+}
